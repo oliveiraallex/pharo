@@ -80,7 +80,7 @@ VMCallbackContext32 >> returnInteger: n [
 { #category : #accessing }
 VMCallbackContext32 >> singleFloatResult: aFloat [
 	self floatAt: 25 put: aFloat.
-	^3
+	^1
 ]
 
 { #category : #accessing }

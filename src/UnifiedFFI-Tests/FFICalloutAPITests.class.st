@@ -4,6 +4,9 @@ Tests for FFICalloutAPI
 Class {
 	#name : #FFICalloutAPITests,
 	#superclass : #TestCase,
+	#instVars : [
+		'callback'
+	],
 	#category : #'UnifiedFFI-Tests-Tests'
 }
 
@@ -253,7 +256,7 @@ FFICalloutAPITests >> testCharPointer [
 { #category : #'tests atomic' }
 FFICalloutAPITests >> testDoubleCall [
 	"Test using generic FFI spec"
-	| callback result |
+	| result |
 	
 	callback := FFICallback 
 		signature: #(double (double x)) 
@@ -277,7 +280,7 @@ FFICalloutAPITests >> testDoubleCall [
 { #category : #'tests atomic' }
 FFICalloutAPITests >> testFloatCall [
 	"Test using generic FFI spec"
-	| callback result |
+	| result |
 	
 	callback := FFICallback 
 		signature: #(float (float x)) 

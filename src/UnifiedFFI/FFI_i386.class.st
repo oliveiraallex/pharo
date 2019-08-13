@@ -9,7 +9,7 @@ Class {
 
 { #category : #testing }
 FFI_i386 class >> isActive [
-	^ Smalltalk vm wordSize = 4
+	^ Smalltalk vm wordSize = 4 and: [ Smalltalk vm isArm not ]
 ]
 
 { #category : #callback }
