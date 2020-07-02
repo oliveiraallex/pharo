@@ -3,6 +3,7 @@ Extension { #name : #Bag }
 { #category : #'*Random-Core' }
 Bag >> atRandom: aGenerator [
 	"Answer a random element of the receiver. Uses aGenerator which
+<<<<<<< HEAD
     should be kept by the user in a variable and used every time. Use
     this instead of #atRandom for better uniformity of random numbers because 
 	 only you use the generator. Causes an error if self has no elements."
@@ -15,4 +16,16 @@ Bag >> atRandom: aGenerator [
 	self doWithOccurrences: [ :key :count | 
 		index := index + count.
 		rand <= index ifTrue: [ ^ key ] ]
+=======
+	should be kept by the user in a variable and used every time. Use
+	this instead of #atRandom for better uniformity of random numbers because 
+	only you use the generator. Causes an error if self has no elements."
+
+	| index |
+ 	self emptyCheck.
+ 	index := aGenerator nextInt: self size.
+ 	"overwritten to use a faster enumeration"
+ 	self doWithOccurrences: [ :key :count | 
+ 		(index := index - count) <= 0 ifTrue: [ ^key ] ]
+>>>>>>> 5092e61a2a1946d97f86f7e3ed2aa92b0841f634
 ]

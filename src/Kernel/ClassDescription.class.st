@@ -196,7 +196,7 @@ ClassDescription >> basicOrganization: aClassOrg [
 { #category : #'accessing - deprecated parallel hierarchy ' }
 ClassDescription >> classClass [
 	"This method is deprecated so consider to migrate."
-	self deprecated:  'Please use #classSide instead' transformWith:  '`@receiver classClasss' 
+	self deprecated:  'Please use #classSide instead' transformWith:  '`@receiver classClass' 
 						-> '`@receiver classSide'.
 	^ self classSide
 ]
@@ -318,12 +318,6 @@ ClassDescription >> classThatDefinesInstVarNamed: instVarName [
 		slotNamed: instVarName
 		 ifFound: [ :slot | slot definingClass  ]
 		 ifNone: nil
-]
-
-{ #category : #slots }
-ClassDescription >> classVariablesNeedFullDefinition [
-
-	^ self classVariables anySatisfy: [ :each | each needsFullDefinition ]
 ]
 
 { #category : #printing }
@@ -563,6 +557,20 @@ ClassDescription >> copyCategory: cat from: aClass classified: newCat [
 		classified: newCat
 ]
 
+{ #category : #slots }
+ClassDescription >> definesSlot: aSlot [
+	"Return true whether the receiver defines an instance variable named aString"
+	
+	^ self slots identityIncludes: aSlot
+]
+
+{ #category : #slots }
+ClassDescription >> definesSlotNamed: aString [
+	"Return true whether the receiver defines an instance variable named aString."
+	
+	^ self slotNames includes: aString
+]
+
 { #category : #'file in/out' }
 ClassDescription >> definition [
 	"Answer a String that defines the receiver."
@@ -600,7 +608,7 @@ ClassDescription >> definitionWithSlots [
 			nextPutAll: 'uses: ';
 			nextPutAll: self traitCompositionString ].
 			
-	(self classLayout isKindOf: FixedLayout) ifFalse: [
+	self classLayout isFixedLayout ifFalse: [
 		stream 
 			crtab; 
 			nextPutAll: 'layout: ';
@@ -884,9 +892,7 @@ ClassDescription >> methodsTaggedWith: aSymbol [
 ClassDescription >> needsSlotClassDefinition [
     "return true if we define something else than InstanceVariableSlots or normal class variables"
 
-    ^ self slotsNeedFullDefinition 
-		or: [ self class slotsNeedFullDefinition 
-		or: [ self classVariablesNeedFullDefinition ] ]
+    ^ self slotsNeedFullDefinition or: [ self class slotsNeedFullDefinition ]
 ]
 
 { #category : #private }
@@ -1230,7 +1236,7 @@ ClassDescription >> slotNames [
 	^self slots collect: [ :each | each name ]
 ]
 
-{ #category : #slots }
+{ #category : #accessing }
 ClassDescription >> slots [
 	^self classLayout visibleSlots
 ]
@@ -1256,10 +1262,34 @@ ClassDescription >> storeOn: aStream [
 ]
 
 { #category : #initialization }
+ClassDescription >> superclass: aSuperclass layout: aLayout [
+	layout := aLayout. 
+	
+	self
+		superclass: aSuperclass
+		methodDictionary: self emptyMethodDictionary
+		format: aLayout format.
+]
+
+{ #category : #initialization }
 ClassDescription >> superclass: aClass methodDictionary: mDict format: fmt [
 	"Basic initialization of the receiver"
 	super superclass: aClass methodDictionary: mDict format: fmt.
 	self organization: nil.
+]
+
+{ #category : #initialization }
+ClassDescription >> superclass: aSuperclass withLayoutType: layoutType slots: slotArray [
+	| superLayout newScope newLayout |
+	superLayout := aSuperclass
+						ifNil: [ EmptyLayout instance ]
+						ifNotNil: [ aSuperclass classLayout ].
+	newScope := superLayout slotScope extend: slotArray.
+	newLayout := layoutType extending: superLayout scope: newScope host: self.
+	newLayout checkSanity.
+	self
+		superclass: aSuperclass
+		layout: newLayout
 ]
 
 { #category : #'accessing tags' }
@@ -1358,54 +1388,45 @@ ClassDescription >> whichCategoryIncludesSelector: aSelector [
 	"Answer the category of the argument, aSelector, in the organization of 
 	the receiver, or answer nil if the receiver does not inlcude this selector."
 
-	(self includesSelector: aSelector)
-		ifTrue: [^ self organization categoryOfElement: aSelector]
-		ifFalse: [^nil]
+	^self organization categoryOfElement: aSelector
 ]
 
 { #category : #queries }
 ClassDescription >> whichSelectorsAccess: instVarName [
-	"Answer a set of selectors whose methods access the argument, 
-	instVarName, as a named instance variable."
+	"Answer the selectors whose methods access the argument, instVarName, as a named instance variable."
 
-	^self
+	^ self
 		slotNamed: instVarName
-		ifFound: [ :slot | 
-			self selectors
-				select: [ :sel | slot isAccessedIn: self>>sel ] ]
-		ifNone: [  #() ]
-]
-
-{ #category : #queries }
-ClassDescription >> whichSelectorsAssign: instVarName [ 
-	self
-		deprecated: 'Please use #whichSelectorsStoreInto: instead'
-		transformWith: '`@receiver whichSelectorsAssign: `@statements' 
-						-> '`@receiver whichSelectorsStoreInto: `@statements'.
-	^self whichSelectorsStoreInto: instVarName
+		ifFound: [ :slot | self selectors select: [ :sel | slot isAccessedIn: self>>sel ] ]
+		ifNone: [ #() ]
 ]
 
 { #category : #queries }
 ClassDescription >> whichSelectorsRead: instVarName [
-	"Answer a Set of selectors whose methods read the argument, 
-	instVarName, as a named instance variable."
+	"Answer the selectors whose methods read the argument, instVarName, as a named instance variable."
 
 	^ self
 		slotNamed: instVarName
-		ifFound:
-			[ :slot | self selectors select: [ :sel | slot isReadIn: self >> sel ] ]
+		ifFound: [ :slot | self selectors select: [ :sel | slot isReadIn: self >> sel ] ]
 		ifNone: [ #() ]
 ]
 
 { #category : #queries }
 ClassDescription >> whichSelectorsStoreInto: instVarName [
-	"Answer a Set of selectors whose methods access the argument, 
-	instVarName, as a named instance variable."
+	self
+		deprecated: 'Please use #whichSelectorsWrite: instead'
+		transformWith: '`@receiver whichSelectorsStoreInto: `@statements' 
+						-> '`@receiver whichSelectorsWrite: `@statements'.
+	^self whichSelectorsWrite: instVarName
+]
+
+{ #category : #queries }
+ClassDescription >> whichSelectorsWrite: instVarName [
+	"Answer the selectors whose methods write the argument, instVarName, as a named instance variable"
 
 	^ self
 		slotNamed: instVarName
-		ifFound:
-			[ :slot | self selectors select: [ :sel | slot isWrittenIn: self >> sel ] ]
+		ifFound: [ :slot | self selectors select: [ :sel | slot isWrittenIn: self >> sel ] ]
 		ifNone: [ #() ]
 ]
 

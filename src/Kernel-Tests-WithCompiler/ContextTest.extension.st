@@ -1,9 +1,24 @@
 Extension { #name : #ContextTest }
 
 { #category : #'*Kernel-Tests-WithCompiler' }
+ContextTest >> testScopeOptimizedBlock [
+	"When asking for the scope of a block that is not there at runtime, we nevertheless what to 
+	get the corresponding scope of the optimized block"
+	
+	| astScope method |
+	
+	method := Smalltalk compiler
+							  class: Object;
+							  compile:  'test 1 to: 1 do: [ :i | ^ thisContext astScope ]'.
+	astScope := method valueWithReceiver: nil arguments: #(). 
+	
+	self assert: astScope class equals: OCOptimizedBlockScope .
+]
+
+{ #category : #'*Kernel-Tests-WithCompiler' }
 ContextTest >> testSourceNodeOptimizedBlock [
 	"When asking for the sourceNode of a block that is not there at runtime, we nevertheless what to 
-	get the corresponding ASTnode of the inlined Block"
+	get the corresponding ASTnode of the ASTNode that created thisContext, the method in this case"
 	
 	| sourceNode method |
 	
@@ -12,7 +27,7 @@ ContextTest >> testSourceNodeOptimizedBlock [
 							  compile:  'test 1 to: 1 do: [ :i | ^ thisContext sourceNode ]'.
 	sourceNode := method valueWithReceiver: nil arguments: #(). 
 	
-	self assert: sourceNode isBlock.
+	self assert: sourceNode isMethod.
 ]
 
 { #category : #'*Kernel-Tests-WithCompiler' }
@@ -32,4 +47,18 @@ ContextTest >> testTempNamedPut [
 	self assert: (thisContext tempNamed: 'oneTemp') equals: oneTemp.
 	thisContext tempNamed: 'oneTemp' put: 2.
 	self assert: (thisContext tempNamed: 'oneTemp') equals: 2
+]
+
+{ #category : #'*Kernel-Tests-WithCompiler' }
+ContextTest >> testTempNamedPutShouldFailGivenNameIsNotTemp [
+	
+	self assert: (self class hasSlotNamed: #expectedFails).	
+	self should: [thisContext tempNamed: #expectedFails put: 0] raise: Error
+]
+
+{ #category : #'*Kernel-Tests-WithCompiler' }
+ContextTest >> testTempNamedShouldFailGivenNameIsNotTemp [
+
+	self assert: (self class hasSlotNamed: #testSelector).
+	self should: [thisContext tempNamed: #testSelector] raise: Error
 ]

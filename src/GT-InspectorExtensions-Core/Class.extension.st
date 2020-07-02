@@ -60,23 +60,13 @@ Class >> gtInspectorInstanceVariablesIn: composite [
 ]
 
 { #category : #'*GT-InspectorExtensions-Core' }
-Class >> gtInspectorInstancesOn: composite [
-	<gtInspectorPresentationOrder: 40>
-	^ composite table
-		title: [ 'Instances' translated ];
-		display: [ self allInstances ];
-		column: 'Hash' evaluated: [ :each | each hash asString ];
-		column: 'Object' evaluated: [ :each | each printString ]
-]
-
-{ #category : #'*GT-InspectorExtensions-Core' }
 Class >> gtInspectorMethodsIn: composite [
 	"This provides a list of all methods provided by the current class"
 
 	<gtInspectorPresentationOrder: 20>
 	composite list 
 		title: 'Methods';
-		display: [ (self methods collect: #asRingDefinition) 
+		display: [ (self methods collect: [ :each | each asRingDefinition ]) 
 						sorted: [ :x :y | x selector < y selector ] ];
 		format: #selector;
 		tags: [ :each | {each methodClass name} ]

@@ -143,7 +143,7 @@ ReleaseTest >> testKeyClassesArePresentInStartupList [
 	| keyClasses registeredHandlers |
 	keyClasses := #(#Delay #ProcessorScheduler #Stdio #OSPlatform #UUIDGenerator #DiskStore #WeakArray #BasicCommandLineHandler).
 	registeredHandlers := SessionManager default startupList
-		collect: #handledId.
+		collect: [:each | each handledId].
 	
 	keyClasses do:	[ :className |
 		self assert: (registeredHandlers includes: className).
@@ -164,6 +164,18 @@ ReleaseTest >> testLocalMethodsOfTheClassShouldNotBeRepeatedInItsTraits [
 	"If a class is using a trait with an explicit requirement method, this class should implement the method"
 	
 	self assertValidLintRule: ReLocalMethodsSameThanTraitRule new withExceptions: #(RBSmalllintTestLocalMethodsSameThanTraitObject).
+]
+
+{ #category : #tests }
+ReleaseTest >> testManifestNamesAccordingToPackageNames [
+	"Make sure package name and manifest name are in synch"
+	
+	|manifestClasses actualManifestNames expectedManifestNames |
+	manifestClasses := self class environment allClasses select: [:each | each isManifest ].
+	actualManifestNames := (manifestClasses collect: [:each | each name ]) sorted.
+	expectedManifestNames := manifestClasses 
+										collect: [:each | TheManifestBuilder manifestClassNameFor: each package name ].
+	self assert: actualManifestNames equals: expectedManifestNames 
 ]
 
 { #category : #tests }
@@ -231,6 +243,18 @@ ReleaseTest >> testPharoVersionFileExists [
 		equals: SystemVersion current major asString,  SystemVersion current minor asString
 ]
 
+{ #category : #'tests - packages - manifests' }
+ReleaseTest >> testProperManifestClasses [
+
+	|manifests|
+	manifests := self class environment allClasses select: [:each | each isManifest ].
+	self assert: (manifests allSatisfy: [:each | each inheritsFrom: PackageManifest ]).
+	self assert: (manifests allSatisfy: [:each | each name beginsWith: 'Manifest' ]).
+
+
+ 
+]
+
 { #category : #'tests - rpackage' }
 ReleaseTest >> testRPackageOrganizer [
 	"Ensure other tests temporary created organizers are collected"
@@ -249,10 +273,9 @@ ReleaseTest >> testRPackageOrganizer [
 { #category : #tests }
 ReleaseTest >> testShouldFileLocatorBeBeforeSystemSettingsPersistenceInStartupList [
 	"This test documents issue https://pharo.manuscript.com/f/cases/17721"
+	
 	| startupList settingsIndex |
-	
-	startupList := (SessionManager default startupList collect: #handledId).
-	
+	startupList := (SessionManager default startupList collect: [:each | each handledId]).
 	settingsIndex := startupList indexOf: #SystemSettingsPersistence.
 	settingsIndex > 0
 		ifTrue: [ self should: [ (startupList indexOf: #FileLocator) < (startupList indexOf: #SystemSettingsPersistence) ] ]
@@ -263,9 +286,7 @@ ReleaseTest >> testShouldWorldMorphBeAfterFontClassesInStartupList [
 	"This test documents issue https://pharo.manuscript.com/f/cases/17834"
 	"The Startup of he WorldMorph is now done in the UIManagerHandler"
 	| startupList |
-	
-	startupList := (SessionManager default startupList collect: #handledId).
-	
+	startupList := (SessionManager default startupList collect: [:each | each handledId]).
 	#(StrikeFont LogicalFont FreeTypeSettings FreeTypeCache FT2Handle) 
 		do: [ :fontClass |
 			self should: [ (startupList indexOf: #UIManagerSessionHandler) > (startupList indexOf: #SystemSettingsPersistence) ] ]
@@ -273,7 +294,7 @@ ReleaseTest >> testShouldWorldMorphBeAfterFontClassesInStartupList [
 
 { #category : #tests }
 ReleaseTest >> testTestCasesEndsWithTestOrTestCase [
-	self assertValidLintRule: ReTestClassNameShouldEndWithTest new
+	self assertValidLintRule: ReTestClassNameShouldEndWithTestRule new
 	
 ]
 

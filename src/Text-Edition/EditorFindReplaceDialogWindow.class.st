@@ -16,7 +16,7 @@ Class {
 	#classInstVars : [
 		'defaultFindReplaceServiceClass'
 	],
-	#category : #'Text-Edition'
+	#category : #'Text-Edition-UI'
 }
 
 { #category : #initializing }
@@ -369,7 +369,7 @@ EditorFindReplaceDialogWindow >> on: aTextView [
 
 { #category : #action }
 EditorFindReplaceDialogWindow >> open [
-	self openAsIsIn: self currentWorld.
+	self openInWorld.
 	self extent: self extent.
 	self activate
 

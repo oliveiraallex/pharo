@@ -151,7 +151,12 @@ ClassTest >> testClassSide [
 ClassTest >> testCommonSuperclassWith [
 	self assert: (OrderedCollection commonSuperclassWith: Array) equals: SequenceableCollection.
 	self assert: (OrderedCollection commonSuperclassWith: OrderedCollection) equals: SequenceableCollection.
-	self assert: (ProtoObject commonSuperclassWith: Object) equals: nil
+	"if the reveiver is the common superclass, return it"
+	self assert: (ProtoObject commonSuperclassWith: Object) equals: ProtoObject.
+	"but the other way this is not true"
+	self assert: (Object commonSuperclassWith: ProtoObject) equals: nil.
+	"as nil is the terminator of the hierarchy, we have to support it"
+	self assert: (nil commonSuperclassWith: ProtoObject) equals: nil.
 ]
 
 { #category : #tests }
@@ -173,6 +178,15 @@ ClassTest >> testEnvironment [
 { #category : #accessing }
 ClassTest >> testEnvironment: anObject [
 	testEnvironment := anObject
+]
+
+{ #category : #tests }
+ClassTest >> testHasBindingThatBeginsWith [
+	self assert: (SmalltalkImage hasBindingThatBeginsWith: 'Compiler').
+	self deny: (SmalltalkImage hasBindingThatBeginsWith: 'Object').
+	
+	"Pools are looked up, too"
+	self assert: (TimeZone hasBindingThatBeginsWith: 'DaysInMo')
 ]
 
 { #category : #'tests - access' }
@@ -323,7 +337,8 @@ ClassTest >> testPoolVariableAccessibleInSubclassOfClassUser [
 ClassTest >> testReferencedClasses [
 	{(ExceptionTester -> { MyTestNotification. Warning. String. MyResumableTestError. OrderedCollection. MyTestError}). 
 	 (CollectionCombinator -> {Array}).
-	 (ExecutionEnvironmentStub -> {OrderedCollection})
+	 (ExecutionEnvironmentStub -> {OrderedCollection}).
+	 (ReferencedClassesTestClass -> {Array. OrderedCollection. Object})
 	}
 		do: [ :assoc | 
 			self assert: assoc key referencedClasses notEmpty.

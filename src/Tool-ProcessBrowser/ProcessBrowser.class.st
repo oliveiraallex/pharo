@@ -69,10 +69,11 @@ Class {
 
 { #category : #initialization }
 ProcessBrowser class >> cleanUp [
- "Remove terminated processes from my suspended list"
-
-       self suspendedProcesses keysDo: [:ea |
-               ea isTerminated ifTrue: [self suspendedProcesses removeKey: ea]]
+ 	"Remove terminated processes from my suspended list"
+	<script>
+	
+	self suspendedProcesses keysDo: [:ea |
+		ea isTerminated ifTrue: [self suspendedProcesses removeKey: ea]]
 ]
 
 { #category : #'process control' }
@@ -140,7 +141,6 @@ ProcessBrowser class >> dumpTallyOnTranscript: tally [
 
 { #category : #initialization }
 ProcessBrowser class >> initialize [
-	"ProcessBrowser initialize"
 	SuspendedProcesses ifNil: [ SuspendedProcesses := IdentityDictionary new ].
 	self registerWellKnownProcesses
 ]
@@ -154,136 +154,11 @@ ProcessBrowser class >> isUIProcess: aProcess [
 ProcessBrowser class >> menuCommandOn: aBuilder [ 
 	<worldMenu> 
 	(aBuilder item: #'Process Browser')
-		parent: #System;
-		order: 0;
+		parent: #Tools;
+		order: 705;
 		action:[ self open ];
 		help: 'Provides a view of all of the processes (threads) executing in Smalltalk.';
-		icon: self taskbarIcon.
-]
-
-{ #category : #menu }
-ProcessBrowser class >> menuProcessList: aBuilder [ 
-	<contextMenu>
-	<processBrowserProcessListMenu>
-
-	| target selectedProcess |
-	
-	target := aBuilder model.
-	selectedProcess := target selectedProcess.
-	
-	selectedProcess
-		ifNotNil: [ 
-			| nameAndRules |
-			nameAndRules := target nameAndRulesForSelectedProcess.
-			(aBuilder item: #'Inspect')
-				keyText: 'i';
-				selector: #inspectProcess.
-			(aBuilder item: #'Explore')
-				keyText: 'I';
-				selector: #exploreProcess.
-			(aBuilder item: #'Inspect Pointers')
-				keyText: 'P';
-				selector: #inspectPointers.
-			(Smalltalk globals includesKey: #PointerExplorer)
-				ifTrue: [ 
-					(aBuilder item: #'Explore pointers')
-						keyText: 'e';
-						selector: #explorePointers ].
-					
-			nameAndRules second
-				ifTrue: [ 
-					(aBuilder item: #'Terminate')
-						keyText: 't';
-						selector: #terminateProcess.
-
-					selectedProcess isSuspended
-						ifTrue: [ 
-							(aBuilder item: #'Resume')
-								keyText: 'r';
-								selector: #resumeProcess ]
-						ifFalse: [ 
-							(aBuilder item: #'Suspend')
-								keyText: 's';
-								selector: #suspendProcess ] ].
-			
-			nameAndRules third
-				ifTrue: [ 
-					(aBuilder item: #'Change priority')
-						keyText: 'p';
-						selector: #changePriority.
-					(aBuilder item: #'Debug')
-						keyText: 'd';
-						selector: #debugProcess ].
-			
-			(aBuilder item: #'Profile messages')
-				keyText: 'm';
-				selector: #messageTally.
-
-			(selectedProcess suspendingList isKindOf: Semaphore)
-				ifTrue: [ 
-					(aBuilder item: #'Signal Semaphore')
-						keyText: 'S';
-						selector: #signalSemaphore ].
-					
-			(aBuilder item: #'Full stack')
-				keyText: 'k';
-				selector: #moreStack;
-				withSeparatorAfter ].
-
-	(aBuilder item: #'Find context...')
-		keyText: 'f';
-		selector: #findContext.
-	(aBuilder item: #'Find again')
-		keyText: 'g';
-		selector: #nextContext;
-		withSeparatorAfter.
-		
-	(aBuilder item: (target isAutoUpdating
-			ifTrue: [ #'Turn off auto-update' ]
-			ifFalse: [ #'Turn on auto-update' ]))
-		keyText: 'a';
-		selector: #toggleAutoUpdate.
-	(aBuilder item: #'Update list')
-		keyText: 'u';
-		selector: #updateProcessList.
-
-	Smalltalk globals 
-		at: #CPUWatcher 
-		ifPresent: [ :pw | 
-			aBuilder withSeparatorAfter.
-			pw isMonitoring
-				ifTrue: [ 
-					(aBuilder item: #'Stop CPUWatcher')
-						selector: #stopCPUWatcher ]
-				ifFalse: [ 
-					(aBuilder item: #'Start CPUWatcher')
-						selector: #startCPUWatcher ] ].
-]
-
-{ #category : #menu }
-ProcessBrowser class >> menuStackList: aBuilder [
-	<contextMenu>
-	<processBrowserStackListMenu>
-	
-	(aBuilder item: #'Inspect context')
-		keyText: 'c';
-		selector: #inspectContext.
-	(aBuilder item: #'Explore context')
-		keyText: 'C';
-		selector: #exploreContext;
-		withSeparatorAfter.
-		
-	(aBuilder item: #'Inspect receiver')
-		keyText: 'i';
-		selector: #inspectReceiver.
-	(aBuilder item: #'Explore receiver')
-		keyText: 'I';
-		selector: #exploreReceiver;
-		withSeparatorAfter.
-		
-	(aBuilder item: #'Browse')
-		keyText: 'b';
-		selector: #browseContext.
+		icon: self taskbarIcon
 ]
 
 { #category : #'process control' }
@@ -301,8 +176,9 @@ ProcessBrowser class >> nameAndRulesFor: aProcess [
 
 { #category : #'instance creation' }
 ProcessBrowser class >> open [
-	"ProcessBrowser open"
 	"Create and schedule a ProcessBrowser."
+	<script>
+	
 	Smalltalk garbageCollect.
 	^ self new build
 ]
@@ -361,11 +237,6 @@ ProcessBrowser class >> registerWellKnownProcesses [
 		allowStop: false
 		allowDebug: false.
 	self
-		registerWellKnownProcess: [ Smalltalk globals at: #SoundPlayer ifPresent: [ :sp | sp playerProcess ] ]
-		label: 'the Sound Player'
-		allowStop: false
-		allowDebug: false.
-	self
 		registerWellKnownProcess: [ Smalltalk globals at: #CPUWatcher ifPresent: [ :cw | cw currentWatcherProcess ] ]
 		label: 'the CPUWatcher'
 		allowStop: false
@@ -420,7 +291,7 @@ ProcessBrowser class >> suspendedProcesses [
 	"Answer a collection of processes that my instances have suspended.  
 	This is so that they don't get garbage collected."
 	^ SuspendedProcesses
-		ifNil: [SuspendedProcesses := IdentityDictionary new]
+		ifNil: [ SuspendedProcesses := IdentityDictionary new ]
 ]
 
 { #category : #'CPU utilization' }
@@ -460,7 +331,7 @@ ProcessBrowser class >> terminateProcess: aProcess [
 			removeKey: aProcess
 			ifAbsent: [].
 		aProcess terminate
-	].
+	]
 
 ]
 
@@ -502,7 +373,7 @@ ProcessBrowser >> build [
 				list: #processNameList
 				selected: #processListIndex
 				changeSelected: #processListIndex:
-				menu: #processListMenu:
+				menu: #menuProcessList:
 				keystroke: #processListKey:from:)
 				enableDragNDrop: false)
 		frame: (0 @ 0 extent: 0.5 @ 0.5).
@@ -717,6 +588,184 @@ ProcessBrowser >> mayBeStartCPUWatcher [
 
 ]
 
+{ #category : #menu }
+ProcessBrowser >> menuProcessList: aMenuMorph [
+	
+	selectedProcess
+		ifNotNil: [ 
+			| nameAndRules |
+			nameAndRules := self nameAndRulesForSelectedProcess.
+			aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: #'Inspect')
+				keyText: 'i';
+				selector: #inspectProcess;
+				target: self;
+				yourself).
+			aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: #'Explore')
+				keyText: 'I';
+				selector: #exploreProcess;
+				target: self;
+				yourself).
+			aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: #'Inspect Pointers')
+				keyText: 'P';
+				selector: #inspectPointers;
+				target: self;
+				yourself).
+			(Smalltalk globals includesKey: #PointerExplorer)
+				ifTrue: [ 
+					aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: #'Explore pointers')
+						keyText: 'e';
+						selector: #explorePointers;
+						target: self;
+						yourself). ].
+					
+			nameAndRules second
+				ifTrue: [ 
+					aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: #'Terminate')
+						keyText: 't';
+						selector: #terminateProcess;
+						target: self;
+						yourself).
+
+					selectedProcess isSuspended
+						ifTrue: [ 
+							aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: #'Resume')
+								keyText: 'r';
+								selector: #resumeProcess;
+								target: self;
+								yourself). ]
+						ifFalse: [ 
+							aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: #'Suspend')
+								keyText: 's';
+								selector: #suspendProcess;
+								target: self;
+								yourself). ] ].
+			
+			nameAndRules third
+				ifTrue: [ 
+					aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: #'Change priority')
+						keyText: 'p';
+						selector: #changePriority;
+						target: self;
+						yourself).
+					aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: #'Debug')
+						keyText: 'd';
+						selector: #debugProcess;
+						target: self;
+						yourself) ].
+			
+			aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: #'Profile messages')
+				keyText: 'm';
+				selector: #messageTally;
+				target: self;
+				yourself).
+
+			(selectedProcess suspendingList isKindOf: Semaphore)
+				ifTrue: [ 
+					aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: #'Signal Semaphore')
+						keyText: 'S';
+						selector: #signalSemaphore;
+						target: self;
+						yourself). ].
+					
+			aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: #'Full stack')
+				keyText: 'k';
+				selector: #moreStack;
+				target: self;
+				yourself). 
+			
+			aMenuMorph addMenuItem: (MenuLineMorph new)].
+
+	aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: #'Find context...')
+		keyText: 'f';
+		selector: #findContext;
+		target: self;
+		yourself).
+	aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: #'Find again')
+		keyText: 'g';
+		selector: #nextContext;
+		target: self;
+		yourself).
+
+	aMenuMorph addMenuItem: (MenuLineMorph new).
+		
+	aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: (self isAutoUpdating
+			ifTrue: [ #'Turn off auto-update' ]
+			ifFalse: [ #'Turn on auto-update' ]))
+		keyText: 'a';
+		selector: #toggleAutoUpdate;
+		target: self;
+		yourself).
+
+	aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: #'Update list')
+		keyText: 'u';
+		selector: #updateProcessList;
+		target: self;
+		yourself).
+
+	Smalltalk globals 
+		at: #CPUWatcher 
+		ifPresent: [ :pw | 
+			aMenuMorph addMenuItem: (MenuLineMorph new).
+			pw isMonitoring
+				ifTrue: [ 
+					aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: #'Stop CPUWatcher')
+						selector: #stopCPUWatcher;
+						target: self;
+						yourself) ]
+				ifFalse: [ 
+					aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: #'Start CPUWatcher')
+						selector: #startCPUWatcher;
+						target: self;
+						yourself) ] ].
+				
+	^ aMenuMorph
+]
+
+{ #category : #menu }
+ProcessBrowser >> menuStackList: aMenuMorph [
+	
+	aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: #'Inspect context')
+		keyText: 'c';
+		selector: #inspectContext;
+		target: self;
+		yourself).
+		
+	aMenuMorph addMenuItem: ((ToggleMenuItemMorph new contents: #'Explore context')
+		keyText: 'C';
+		selector: #exploreContext;
+		target: self;
+		yourself).
+		
+	aMenuMorph addMenuItem: MenuLineMorph new.
+		
+	aMenuMorph addMenuItem:((ToggleMenuItemMorph new contents: #'Explore context')
+		keyText: 'C';
+		selector: #exploreContext;
+		target: self;
+		yourself).
+		
+		
+	aMenuMorph addMenuItem:((ToggleMenuItemMorph new contents: #'Inspect receiver')
+		keyText: 'i';
+		selector: #inspectReceiver;
+		target: self;
+		yourself).
+
+	aMenuMorph addMenuItem:((ToggleMenuItemMorph new contents: #'Explore receiver')
+		keyText: 'I';
+		selector: #exploreReceiver;
+		target: self;
+		yourself).
+
+	aMenuMorph addMenuItem: MenuLineMorph new.
+		
+	aMenuMorph addMenuItem:((ToggleMenuItemMorph new contents: #'Browse')
+		keyText: 'b';
+		selector: #browseContext;
+		target: self;
+		yourself).
+]
+
 { #category : #'stack list' }
 ProcessBrowser >> messageTally [
 	| secString secs |
@@ -735,7 +784,7 @@ ProcessBrowser >> methodText [
 						ifNil: ['']
 						ifNotNil: [| pcRange | 
 							methodText := [ selectedContext sourceCode ]
-								ifError: [ 'error getting method text' ].
+								onErrorDo: [ 'error getting method text' ].
 							pcRange := self pcRange.
 							methodText asText
 								addAttribute: TextColor red
@@ -843,11 +892,6 @@ ProcessBrowser >> processListIndex: index [
 { #category : #'process list' }
 ProcessBrowser >> processListKey: aKey from: aView [ 
 	self perform: (self keyEventsDict at: aKey ifAbsent: [ ^ self ])
-]
-
-{ #category : #'process list' }
-ProcessBrowser >> processListMenu: menu [
-	^menu addAllFromPragma: 'processBrowserProcessListMenu' target: self
 ]
 
 { #category : #'process list' }
@@ -980,7 +1024,8 @@ ProcessBrowser >> stackListKey: aKey from: aView [
 { #category : #'stack list' }
 ProcessBrowser >> stackListMenu: aMenu [ 
 	selectedContext ifNil: [^ aMenu].
-	^aMenu addAllFromPragma: 'processBrowserStackListMenu' target: self
+	self menuStackList: aMenu.
+	^ aMenu
 ]
 
 { #category : #'stack list' }
@@ -1065,7 +1110,7 @@ ProcessBrowser >> text [
 ProcessBrowser >> toggleAutoUpdate [
 	self isAutoUpdating
 		ifTrue: [ self stopAutoUpdate ]
-		ifFalse: [ self startAutoUpdate ].
+		ifFalse: [ self startAutoUpdate ]
 
 ]
 

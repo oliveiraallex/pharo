@@ -448,6 +448,12 @@ CompiledMethod >> getSourceReplacingSelectorWith: newSelector [
 	^newSource
 ]
 
+{ #category : #testing }
+CompiledMethod >> hasComment [
+	"check if this method has a method comment"
+	^self comment isEmptyOrNil not
+]
+
 { #category : #'accessing-pragmas & properties' }
 CompiledMethod >> hasPragmaNamed: aSymbol [
 	^ self pragmas anySatisfy: [ :pragma | pragma selector = aSymbol ]
@@ -655,12 +661,18 @@ CompiledMethod >> isTaggedWith: aSymbol [
 { #category : #'source code management' }
 CompiledMethod >> linesOfCode [
 	"An approximate measure of lines of code.
-	Includes comments, but excludes empty lines."
+	Includes method's name and comments, but excludes empty lines."
 	| lines |
 	lines := 0.
 	self sourceCode lineIndicesDo: [:start :endWithoutDelimiters :end |
 		endWithoutDelimiters > start ifTrue: [lines := lines+1]].
 	^lines
+]
+
+{ #category : #literals }
+CompiledMethod >> literalsToSkip [
+
+	^ 2
 ]
 
 { #category : #private }
@@ -697,18 +709,6 @@ CompiledMethod >> name [
 CompiledMethod >> numberOfReservedLiterals [
 
 	^ 2
-]
-
-{ #category : #accessing }
-CompiledMethod >> origin [
-	^ self methodClass findOriginClassOf: self
-]
-
-{ #category : #accessing }
-CompiledMethod >> originMethod [
-	^ self methodClass findOriginMethodOf: self.
-	
-
 ]
 
 { #category : #private }

@@ -36,6 +36,11 @@ SpMorphicTreeTableDataSource >> allShownItems [
 ]
 
 { #category : #accessing }
+SpMorphicTreeTableDataSource >> buttonFor: item [
+	^ (self shouldDisplayExpandableArrowFor: item) ifTrue: [ item generateButton ] ifFalse: [ self class emptyMorph ]
+]
+
+{ #category : #accessing }
 SpMorphicTreeTableDataSource >> cellColumn: column row: rowIndex [
 	| cell builder item |
 	
@@ -139,11 +144,19 @@ SpMorphicTreeTableDataSource >> searchText: aString [
 		dataSource: self
 ]
 
+{ #category : #testing }
+SpMorphicTreeTableDataSource >> shouldDisplayExpandableArrowFor: item [
+	^ (self canDisplayChildrenOf: item) and: [
+			self model shouldLazilyComputeChildren
+				ifTrue: [ item hasComputedChildren ]
+				ifFalse: [ item hasChildren ] ]
+]
+
 { #category : #sorting }
 SpMorphicTreeTableDataSource >> sortElements: aSortFunction [
 
 	unsortedElements ifNil: [ unsortedElements := self rootsItems ].
-	self rootItem data: ((self rootItem children collect: #data) sorted: aSortFunction)
+	self rootItem data: ((self rootItem children collect: [:each | each data]) sorted: aSortFunction)
 ]
 
 { #category : #accessing }

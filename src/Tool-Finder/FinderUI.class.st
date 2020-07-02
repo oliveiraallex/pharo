@@ -436,15 +436,16 @@ FinderUI >> buildSearchButton [
 
 { #category : #'items creation' }
 FinderUI >> buildSearchModeDropListIn: aWindow [
-			^(self theme 
-				newDropListIn: aWindow
-				for:self				
-				list: #searchModesList
-				getSelected: #currentSearchMode
-				setSelected: #currentSearchMode:
-				getEnabled: nil
-				useIndex: false 
-				help: self searchModeHelpText) hResizing: #rigid; width: 120; yourself
+	
+	^ (self theme 
+		newDropListIn: aWindow
+		for:self				
+		list: #searchModesList
+		getSelected: #currentSearchMode
+		setSelected: #currentSearchMode:
+		getEnabled: nil
+		useIndex: false 
+		help: self searchModeHelpText) hResizing: #rigid; width: 120; yourself
 
 ]
 
@@ -531,8 +532,8 @@ FinderUI >> compileSource: aString notifying: aController [
 { #category : #private }
 FinderUI >> constructPackagesSet [
 	| result |
-	result := (self environment packages collect: #name)
-		difference: (self packagesSelection packages collect: #name).
+	result := (self environment packages collect: [:each | each name])
+		difference: (self packagesSelection packages collect: [:each | each name]).
 	^ result asSet asSortedCollection: [ :a :b | a < b ]
 ]
 

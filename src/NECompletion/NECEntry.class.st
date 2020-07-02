@@ -11,6 +11,9 @@ Class {
 		'node',
 		'description'
 	],
+	#classVars : [
+		'SpaceAfterCompletion'
+	],
 	#category : #'NECompletion-Model'
 }
 
@@ -19,9 +22,33 @@ NECEntry class >> contents: aString node: aNode [
 	^ self new contents: aString node: aNode
 ]
 
+{ #category : #accessing }
+NECEntry class >> spaceAfterCompletion [
+	
+	^ SpaceAfterCompletion
+]
+
+{ #category : #accessing }
+NECEntry class >> spaceAfterCompletion: aBoolean [
+
+	SpaceAfterCompletion := aBoolean
+]
+
 { #category : #operations }
 NECEntry >> <= aECEntry [ 
 	^ contents <= aECEntry contents
+]
+
+{ #category : #operations }
+NECEntry >> activateOn: aCompletionContext [
+
+	| entryContents |
+	"By default insert the contents of the entry instead of the token in the text editor"
+	entryContents := self contents asSymbol separateKeywords.
+	entryContents := (self class spaceAfterCompletion
+				ifTrue: [ entryContents , ' ' ]
+				ifFalse: [ entryContents ]).
+	aCompletionContext replaceTokenInEditorWith: entryContents
 ]
 
 { #category : #private }

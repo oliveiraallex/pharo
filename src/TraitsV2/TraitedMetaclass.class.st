@@ -44,6 +44,14 @@ TraitedMetaclass >> addSelector: selector withMethod: compiledMethod [
 	TraitChange addSelector: selector on: self
 ]
 
+{ #category : #'accessing method dictionary' }
+TraitedMetaclass >> addSelector: selector withRecompiledMethod: compiledMethod [ 
+
+	self localMethodDict at: selector put: compiledMethod.
+	super addSelector: selector withRecompiledMethod: compiledMethod.
+	TraitChange addSelector: selector on: self
+]
+
 { #category : #querying }
 TraitedMetaclass >> allTraits [
 	
@@ -145,7 +153,7 @@ TraitedMetaclass >> findOriginMethodOf: aMethod [
 { #category : #testing }
 TraitedMetaclass >> hasTraitComposition [
 	
-	^ self traitComposition isEmpty not
+	^ self traitComposition isEmpty not 
 ]
 
 { #category : #'testing method dictionary' }
@@ -336,6 +344,10 @@ TraitedMetaclass >> traitComposition [
 
 { #category : #accessing }
 TraitedMetaclass >> traitComposition: aComposition [
+
+	aComposition asTraitComposition allTraits do: [ :aMaybeTrait |
+		aMaybeTrait isTrait ifFalse: [ 
+			self error: 'All the members of the trait composition should be traits' ]].
 
 	composition := aComposition
 ]

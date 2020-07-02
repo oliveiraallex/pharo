@@ -77,6 +77,25 @@ CompiledCode >> accessesSlot: aSlot [
 	
 ]
 
+{ #category : #accessing }
+CompiledCode >> addWithAllBlocksInto: collected [
+
+	(collected includes: self) ifTrue: [ ^ collected ].
+	collected add: self.
+
+	self literals 
+		select: [ :aLiteral | aLiteral isCompiledBlock ] 
+		thenDo: [ :aLiteral | aLiteral addWithAllBlocksInto: collected ].
+		
+	^ collected
+]
+
+{ #category : #literals }
+CompiledCode >> additionalMethodStateRefersToLiteral: literal [
+	^ self penultimateLiteral isMethodProperties
+		and: [ self penultimateLiteral refersToLiteral: literal ]
+]
+
 { #category : #literals }
 CompiledCode >> allLiterals [
 	"Answer an Array of the literals referenced by the receiver.	
@@ -156,7 +175,7 @@ CompiledCode >> comment [
 	"Return the first comment of the receiver"
 	"(self>>#comment) comment"
 	
-	^ self methodClass firstPrecodeCommentFor: self selector
+	^ self ast firstPrecodeComment
 ]
 
 { #category : #testing }
@@ -241,19 +260,13 @@ CompiledCode >> hasLiteralSuchThat: litBlock [
 ]
 
 { #category : #literals }
-CompiledCode >> hasLiteralThorough: literal [
-	"Answer true if any literal in this method is literal,
-	even if embedded in array structure."
-
-	(self penultimateLiteral isMethodProperties
-	 and: [self penultimateLiteral hasLiteralThorough: literal]) ifTrue:[^true].
-	2 to: self numLiterals - 1 "exclude header and methodClass or outerCode"
-	   do:[:index | | lit |
-		(((lit := self objectAt: index) literalEqual: literal)
-		 or: [lit isArray and: [lit hasLiteral: literal]]) ifTrue:
-			[^ true].
-		(lit isMemberOf: CompiledBlock) ifTrue: [ (lit hasLiteralThorough: literal) ifTrue: [ ^true ] ] ].
-	^ false 
+CompiledCode >> hasLiteralThorough: aLiteral [
+	self 
+		deprecated: 'Use #refersToLiteral: instead.' 
+		on: '31 January 2020'
+		in: #Pharo9
+		transformWith: '`@receiver hasLiteralThorough: `@arg' -> '`@receiver refersToLiteral: `@arg'.
+	^ self refersToLiteral: aLiteral
 ]
 
 { #category : #accessing }
@@ -272,11 +285,17 @@ CompiledCode >> hasSelector: selector specialSelectorIndex: specialOrNil [
 	"Answers true if the method refers to the selector.
 	 If you don't know what's a special selector, use #hasSelector:.
 	 If you do, you may call this method directly to avoid recomputing 
-	 the special selector index all the time."
-	 (self hasLiteralThorough: selector) ifTrue: [ ^ true ].
-	^ specialOrNil 
-		ifNil: [ false ] 
-		ifNotNil: [ self scanFor: self encoderClass firstSpecialSelectorByte + specialOrNil ]
+	 the special selector index all the time.
+	
+	 I traverse the method and all the compiled blocks in the literals 	 
+	"
+
+	^ self withAllBlocks
+		anySatisfy: [ :aCompiledCode | 
+			(aCompiledCode refersToLiteral: selector)
+				or: [ specialOrNil isNotNil
+						and: [ aCompiledCode
+								scanFor: self encoderClass firstSpecialSelectorByte + specialOrNil ] ] ]
 ]
 
 { #category : #accessing }
@@ -380,11 +399,6 @@ CompiledCode >> isCollection [
 ]
 
 { #category : #testing }
-CompiledCode >> isCompiledBlock [
-	^ false
-]
-
-{ #category : #testing }
 CompiledCode >> isDoIt [
 	^ false
 ]
@@ -465,11 +479,22 @@ CompiledCode >> literals [
 ]
 
 { #category : #literals }
+CompiledCode >> literalsAt: anIndex [
+	"All literals are shifted of one slot. First slot is the method header"
+	^ self objectAt: anIndex + 1
+]
+
+{ #category : #literals }
 CompiledCode >> literalsDo: aBlock [
 	"Evaluate aBlock for each of the literals referenced by the receiver."
 	1 to: self numLiterals do:
-		[:index |
-		aBlock value: (self objectAt: index + 1)]
+		[:index | aBlock value: (self literalAt: index)]
+]
+
+{ #category : #literals }
+CompiledCode >> literalsToSkip [
+
+	^ self subclassResponsibility
 ]
 
 { #category : #scanning }
@@ -600,6 +625,16 @@ CompiledCode >> objectAt: index put: value [
 ]
 
 { #category : #accessing }
+CompiledCode >> origin [
+	^ self methodClass findOriginClassOf: self method
+]
+
+{ #category : #accessing }
+CompiledCode >> originMethod [
+	^ self methodClass findOriginMethodOf: self method
+]
+
+{ #category : #accessing }
 CompiledCode >> penultimateLiteral [
 	^ self subclassResponsibility
 ]
@@ -676,12 +711,20 @@ CompiledCode >> referredInstVars [
 ]
 
 { #category : #literals }
-CompiledCode >> refersToLiteral: aLiteral [ 
-	"Answer true if any literal in this method is literal, even if embedded in array structure or within its pragmas."
-	"only iterate to numLiterals - 1, as the last has the classBinding and the last-but-one needs special treatment"
-	
-	"to deprecate: use hasLiteralThorough:"
-	^ self hasLiteralThorough: aLiteral.
+CompiledCode >> refersToLiteral: aLiteral [
+	"Answer true if any literal in this method is literal,
+	even if embedded in array structure."
+
+	(self additionalMethodStateRefersToLiteral: aLiteral)
+		ifTrue: [ ^ true ].
+
+	"exclude selector or additional method state (penultimate slot) 
+	and methodClass or outerCode (last slot)"
+	1 to: self numLiterals - self literalsToSkip do: [ :index | 
+		((self literalAt: index) refersToLiteral: aLiteral)
+			ifTrue: [ ^ true ] ].
+
+	^ false
 ]
 
 { #category : #comparing }
@@ -712,8 +755,10 @@ CompiledCode >> sameLiteralsAs: method [
 							ifTrue: [ 
 								"properties"
 								"don't create properties if they don't exist"
-								(literal1 isSymbol and: [ literal2 isSymbol ]) ifFalse: [
-									(self properties analogousCodeTo: method properties) ifFalse: [ ^false ] ] ]
+								(literal1 isSymbol and: [ literal2 isSymbol ]) 
+									ifTrue: [ ^ false ]
+									ifFalse: [
+										(self properties analogousCodeTo: method properties) ifFalse: [ ^false ] ] ]
 							ifFalse: [ ^ false ] ] ] ].
 	"Class side methods have non unique (nil -> a Metaclass) as literal and cannot be compared equal"
 	literal1 := self literalAt: numLits.
@@ -803,11 +848,6 @@ CompiledCode >> sourceNode [
 ]
 
 { #category : #accessing }
-CompiledCode >> sourceNodeExecutedForPC: arg1 [ 
-	^ self subclassResponsibility
-]
-
-{ #category : #accessing }
 CompiledCode >> sourceNodeForPC: arg1 [ 
 	^ self subclassResponsibility
 ]
@@ -866,6 +906,22 @@ CompiledCode >> voidCogVMState [
 
 	<primitive: 215>
 	^self flushCache
+]
+
+{ #category : #accessing }
+CompiledCode >> withAllBlocks [
+
+	^ self addWithAllBlocksInto: IdentitySet new.
+]
+
+{ #category : #accessing }
+CompiledCode >> withAllNestedLiteralsDo: aBlockClosure [ 
+	"This method traverses all the nested literals.
+	As a Block or Method can have literals in the nested blocks. 
+	This is used to query all the selectors used in a method for example"
+	
+	self withAllBlocks do: [ :aCompiledCode | 
+		aCompiledCode allLiterals do: aBlockClosure ]
 ]
 
 { #category : #scanning }

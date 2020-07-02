@@ -30,7 +30,8 @@ Class {
 		'pragmas',
 		'replacements',
 		'nodeReplacements',
-		'compilationContext'
+		'compilationContext',
+		'bcToASTCache'
 	],
 	#category : #'AST-Core-Nodes'
 }
@@ -137,6 +138,15 @@ RBMethodNode >> allDefinedVariables [
 RBMethodNode >> allSequenceNodes [
 
 	^ self allChildren select: #isSequence
+]
+
+{ #category : #accessing }
+RBMethodNode >> allStatements [
+	"return the statements including variable definition."
+	^ self temporaries asOrderedCollection copy
+			addAll: super allStatements;
+			yourself
+
 ]
 
 { #category : #accessing }
@@ -285,8 +295,7 @@ RBMethodNode >> decompileString [
 
 { #category : #testing }
 RBMethodNode >> defines: aName [
-^ (arguments anySatisfy: [ :each | each name = aName ])
-
+	^ (arguments anySatisfy: [ :each | each name = aName ])
 		or: [ self pragmas anySatisfy: [ :pragma | pragma defines: aName ] ]
 ]
 
@@ -327,10 +336,8 @@ RBMethodNode >> extractSubtreeWith: aSourceCode [
 
 { #category : #accessing }
 RBMethodNode >> firstPrecodeComment [
-	| comment  | 
 	self comments ifEmpty: [ ^nil ].
-	comment :=  self comments first.
-	^self source copyFrom: comment start to: comment stop.
+	^ self comments first contents
 ]
 
 { #category : #testing }
@@ -342,6 +349,11 @@ RBMethodNode >> hasArgumentNamed: aString [
 RBMethodNode >> hasPragmaNamed: aSymbol [	
 	self pragmaNamed: aSymbol ifAbsent: [ ^ false ].
 	^ true
+]
+
+{ #category : #testing }
+RBMethodNode >> hasTemporaries [
+	^ self temporaries isNotEmpty
 ]
 
 { #category : #testing }
@@ -546,11 +558,6 @@ RBMethodNode >> pragmas: aCollection [
 	pragmas do: [ :each | each parent: self ]
 ]
 
-{ #category : #accessing }
-RBMethodNode >> primitiveSources [
-	^ self pragmas collect: [ :each | self source copyFrom: each first to: each last ]
-]
-
 { #category : #printing }
 RBMethodNode >> printOn: aStream [ 
 	aStream nextPutAll: self formattedCode
@@ -665,7 +672,7 @@ RBMethodNode >> selectorAndArgumentNames [
 
 { #category : #accessing }
 RBMethodNode >> selectorParts [
-	^ self keywords collect: #asSymbol.
+	^ self keywords collect: [:each | each asSymbol]
 ]
 
 { #category : #accessing }

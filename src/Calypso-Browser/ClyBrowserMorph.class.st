@@ -237,7 +237,7 @@ ClyBrowserMorph >> changeStateOf: aQueryView by: aBlock [
 		aQueryView changesWasInitiatedByUser ifTrue: [
 			newTools := OrderedCollection new.	
 			tabManager buildToolsOn: newTools for: aQueryView createSelectionContext.
-			tabManager desiredSelection: (newTools collect: #class)	].
+			tabManager desiredSelection: (newTools collect: [:each | each class])	].
 	]
 ]
 
@@ -396,7 +396,7 @@ ClyBrowserMorph >> initializeNavigationViews [
 { #category : #initialization }
 ClyBrowserMorph >> initializeToolsPanel [
 	toolbar := ClyToolbarMorph of: self.
-	tabManager := ClyTabManager of: self.
+	tabManager := ClyNotebookManager of: self.
 	
 	toolPanel := PanelMorph new.
 	toolPanel name: 'tools panel'. 
