@@ -237,9 +237,13 @@ CompletionEngine >> newSmartCharacterInsertionStringForLeft: left right: right [
 CompletionEngine >> openMenu [
 	| theMenu class |
 	self stopCompletionDelay.
+<<<<<<< HEAD
 	
 	class := editor model ifNotNil: [ :model | model selectedClassOrMetaClass ].
 	
+=======
+	class := editor model ifNotNil: [ :model | model selectedClassOrMetaClass ].
+>>>>>>> 5e328f2d7e8ed65fbddfb761624df5a19d0400f7
 	context := self contextClass
 				engine: self
 				class: class

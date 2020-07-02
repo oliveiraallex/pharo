@@ -51,7 +51,11 @@ OCExtraBindingScope >> lookupVar: name [
 				assoc: assoc;
 				scope: self;
 				yourself ].
+<<<<<<< HEAD
 	^ outerScope lookupVar: name 
+=======
+	^ outerScope lookupVar: name
+>>>>>>> 5e328f2d7e8ed65fbddfb761624df5a19d0400f7
 ]
 
 { #category : #'instance creation' }
